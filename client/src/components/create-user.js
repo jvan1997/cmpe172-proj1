@@ -45,7 +45,7 @@ export default class CreateUesr extends Component{
                                 id="password" onChange={this.onChange} type="password" value={this.state.password}placeholder="Enter email" />
                 </div>
               <div className="form-group">
-                <input type="submit" value="Create User" disabled={!this.validateForm()} className="font-bold cursor-pointer border border-solid p-2 border-green-600 rounded text-gray-700" />
+                <input type="submit" value="Create User" disabled={!this.validateForm()} className="font-boldcursor-pointer border border-solid p-2 border-green-600 rounded text-gray-700" />
               </div>
             </form>
           </div>
