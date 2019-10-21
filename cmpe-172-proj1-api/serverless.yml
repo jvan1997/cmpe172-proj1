@@ -1,4 +1,4 @@
-service: cmpe-172-proj1-api
+service: cmpe-172-proj2-api
 # Create an optimized package for our functions
 package:
   individually: true
@@ -7,18 +7,23 @@ plugins:
   - serverless-bundle # Package our functions with Webpack
   - serverless-offline
   - serverless-dotenv-plugin # Load .env as environment variables
+custom:
+  # Our stage is based on what is passed in when running serverless
+  # commands. Or fallsback to what we have set in the provider section.
+  stage: ${opt:stage, self:provider.stage}
+  # Set the table name here so we can use it while testing locally
+  tableName: ${self:custom.stage}-posts
 
 provider:
   name: aws
   runtime: nodejs10.x
-  stage: prod
+  stage: dev
   region: us-west-2
 
   # These environment variables are made available to our functions
   # under process.env.
   environment:
-    tableName: project1table
-    stripeSecretKey: ${env:STRIPE_SECRET_KEY}
+    tableName: ${self:custom.tableName}
 
   # 'iamRoleStatements' defines the permission policy for the Lambda function.
   # In this case Lambda functions are granted with permissions to access DynamoDB.
@@ -32,7 +37,8 @@ provider:
         - dynamodb:PutItem
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
-      Resource: "arn:aws:dynamodb:us-west-1:*:*"
+      Resource: 
+        - "Fn::GetAtt": [ PostsTable, Arn ]
 
 functions:
   # Defines an HTTP API endpoint that calls the main function in create.js
@@ -108,3 +114,8 @@ functions:
 resources:
   # API Gateway Errors
   - ${file(resources/api-gateway-errors.yml)}
+  - ${file(resources/database.yml)}
+  - ${file(resources/s3.yml)}
+  - ${file(resources/user.yml)}
+  - ${file(resources/identity.yml)}
+
