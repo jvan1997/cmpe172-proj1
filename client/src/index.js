@@ -5,7 +5,9 @@ import * as serviceWorker from './serviceWorker';
 import './styles/tailwind.css';
 import Amplify from 'aws-amplify';
 import config from './config';
-
+import { BrowserRouter as Router } from 'react-router-dom';
+import { createBrowserHistory } from 'history';
+const browserHistory = createBrowserHistory();
 Amplify.configure({
     Auth: {
       mandatorySignIn: true,
@@ -22,14 +24,15 @@ Amplify.configure({
     API: {
       endpoints: [
         {
-          name: "notes",
+          name: "posts",
           endpoint: config.apiGateway.URL,
           region: config.apiGateway.REGION
         },
       ]
     }
   });
-ReactDOM.render(<App />, document.getElementById('root'));
+ReactDOM.render(
+<Router history={browserHistory}><App /></Router>, document.getElementById('root'));
 
 // If you want your app to work offline and load faster, you can change
 // unregister() to register() below. Note this comes with some pitfalls.

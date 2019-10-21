@@ -1,6 +1,10 @@
-import React,{Component} from 'react';
-import DatePicker from 'react-datepicker';
+import React, {Component} from 'react';
 import "react-datepicker/dist/react-datepicker.css";
+import ReactLoading from 'react-loading';
+import { Auth } from "aws-amplify";
+import { API } from "aws-amplify";
+import { Storage } from "aws-amplify";
+
 export default class CreatePost extends Component{
     constructor(props){
         super(props)
@@ -12,6 +16,10 @@ export default class CreatePost extends Component{
             price:0,
             image:'',
             users:[],
+            selectedFile: null,
+            hasFile: false,
+            isLoading: false,
+            noUser: true,
         }
         this.onChange = this.onChange.bind(this);
         this.onSubmit = this.onSubmit.bind(this);
@@ -21,51 +29,97 @@ export default class CreatePost extends Component{
             users:['testuser'],
             username:'testuser'
         })
-    }
+        try{
+        Auth.currentAuthenticatedUser()
+    .then(user => {
+        console.log("HI");
+        console.log(user);
+        this.setState({noUser:false, name:user.attributes.name, lastname:user.attributes.family_name});})
+    }catch(e){
+      console.log(e);
+    }}
     onChange(e){
         this.setState({
             [e.target.id]:e.target.value
         });
     }
-    onSubmit(e){
+   async s3Upload(file) {
+  const filename = `${Date.now()}-${file.name}`;
+
+  const stored = await Storage.vault.put(filename, file, {
+    contentType: file.type
+  });
+console.log(stored.key);
+  return stored.key;
+}
+    async onSubmit(e){
         e.preventDefault();
+        console.log(this.state);
+        if(this.state.content === '' || this.state.title === '' || this.state.file === null){
+          alert("Please fill out all fields");
+          return;
+        }
+        
+      const fileKey = this.state.selectedFile ? await this.s3Upload(this.state.selectedFile)
+      : null;
+        this.setState({isLoading:true});
         const post  ={
-            username:this.state.username,
+            firstname:this.state.name,
+            lastname:this.state.lastname,
             content:this.state.content,
             title:this.state.title,
-            price:this.state.price,
-            image:this.state.image,
-            date:this.state.date,
+            file:fileKey
         }
+    try {
+        await this.createPost(post);
+        this.props.history.push("/");
+      } catch (e) {
+        alert(e);
+        this.setState({isLoading:false});
+      }
+    
         console.log(post);
        // window.location = '/'
     }
+    createPost(post) {
+      console.log(this.state.name,this.state.lastname,this.state.content);
+       console.log(post);
+        return API.post("posts", "/posts", {
+            body:post
+        });
+}
+    onChangeHandler=event=>{
+        let file = event.target.files[0];
+    if (file && !file.name) {
+       window.alert("Please select a file");
+       return false;
+    }
+    if (file.size > 10e6) {
+      window.alert("Please upload a file smaller than 10 MB");
+      event.target.value = null;
+      return false;
+    }
+      console.log(event.target.files[0]);
+    this.setState({
+      selectedFile: event.target.files[0],
+      hasFile: true,
+    });
+
+  }
     render() {
         return(
+          
             <div className="flex items-center h-full w-full">
+              {this.state.noUser &&
+                <div><p>Please login/register to create a post</p></div>
+              }
+              {!this.state.noUser && 
             <div className="container-sm border-2 border-solid border-green-600 max-w-sm mx-auto mt-1/10 bg-white rounded p-10 shadow-lg">
                 <p className="w-full block font-sans text-2xl font-bold text-center justify-center mb-14">
       Write new Post
         </p>
       <form onSubmit={this.onSubmit}>
-        <div className="items-center flex justify-center"> 
-          <label className="font-bold">Username: </label>
-          <select ref="userInput"
-                id="username"
-              required
-              className="h-10 border border-solid border-green-600 rounded mb-4"
-              value={this.state.username}
-              onChange={e => this.onChange(e)}>
-              {
-                this.state.users.map(function(user) {
-                  return <option 
-                    key={user}
-                    value={user}>{user}
-                    </option>;
-                })
-              }
-          </select>
-        </div>
+
         <div className="items-center flex justify-center"> 
           <label className="font-bold">Title: </label>
           <input  type="text"
@@ -77,14 +131,9 @@ export default class CreatePost extends Component{
               />
         </div>
         <div className="items-center flex justify-center">
-          <label className="font-bold">Price: </label>
-          <input 
-            id="price"
-              type="number" 
-              className="w-24 h-10 border border-solid border-green-600 rounded mb-4 "
-              value={this.state.duration}
-              onChange={e => this.onChange(e)}
-              />
+          <label className="font-bold">File: </label>
+           <input type="file" id="file" name="file" className="w-auto border border-solid border-green-600 rounded mb-4 "
+ onChange={e => this.onChangeHandler(e)}/>
         </div>
         <div className="items-center block justify-center">
           <label className="font-bold">Description: </label>
@@ -96,8 +145,14 @@ export default class CreatePost extends Component{
         <div className="items-center flex justify-center">
           <input type="submit" value="Create Post" className="px-4 py-2 rounded border border-solid border-green-400" />
         </div>
+        {this.state.isLoading && 
+        <div className="text-center items-center justify-center flex">
+                <ReactLoading type={"bars"} color={"#38a169"} height={'20%'} width={'20%'} />
+                </div>
+              }
       </form>
     </div>
+    }
     </div>
     
         );
