@@ -66,11 +66,34 @@ functions:
           method: get
           cors: true
           authorizer: aws_iam
+  adminGet:
+    # Defines an HTTP API endpoint that calls the main function in get.js
+    # - path: url path is /notes/{id}
+    # - method: GET request
+    handler: adminGet.main
+    events:
+      - http:
+          path: posts/{id}
+          method: get
+          cors: true
+          authorizer: aws_iam
+
   list:
     # Defines an HTTP API endpoint that calls the main function in list.js
     # - path: url path is /notes
     # - method: GET request
     handler: list.main
+    events:
+      - http:
+          path: posts
+          method: get
+          cors: true
+          authorizer: aws_iam
+  adminList:
+    # Defines an HTTP API endpoint that calls the main function in list.js
+    # - path: url path is /notes
+    # - method: GET request
+    handler: adminList.main
     events:
       - http:
           path: posts
@@ -93,6 +116,17 @@ functions:
     # - path: url path is /notes/{id}
     # - method: DELETE request
     handler: delete.main
+    events:
+      - http:
+          path: posts/{id}
+          method: delete
+          cors: true
+          authorizer: aws_iam
+  adminDelete:
+    # Defines an HTTP API endpoint that calls the main function in delete.js
+    # - path: url path is /notes/{id}
+    # - method: DELETE request
+    handler: adminDelete.main
     events:
       - http:
           path: posts/{id}

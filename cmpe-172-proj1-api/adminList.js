@@ -3,18 +3,14 @@ import { success, failure } from "./libs/response-lib";
 
 export async function main(event, context) {
   const params = {
-    TableName: process.env.tableName,
-
-    Key: {
-      userId: event.requestContext.identity.cognitoIdentityId,
-      nodeId: event.pathParameters.id
-    }
+    TableName: process.env.tableName
   };
 
   try {
-    await dynamoDbLib.call("delete", params);
-    return success({ status: true });
+    const result = await dynamoDbLib.call("scan", params);
+    return success(result.Items);
   } catch (e) {
+      console.log(e);
     return failure({ status: false });
   }
 }

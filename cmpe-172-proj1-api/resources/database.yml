@@ -8,6 +8,9 @@ Resources:
         - 
           AttributeName: nodeId
           AttributeType: S
+        -
+          AttributeName: admin
+          AttributeType: S
       BillingMode: PAY_PER_REQUEST
       KeySchema: 
         - 

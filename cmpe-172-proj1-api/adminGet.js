@@ -4,23 +4,23 @@ import { success, failure } from "./libs/response-lib";
 export async function main(event, context) {
   const params = {
     TableName: process.env.tableName,
-
-    Key: {
-      userId: event.requestContext.identity.cognitoIdentityId,
-      nodeId: event.pathParameters.id
-    }
-  };
+    ExpressionAttributeValues: {
+        ":search": event.pathParameters.id
+      },
+    FilterExpression: "nodeId = :search",
+      };
 
   try {
-
-    const result = await dynamoDbLib.call("get", params);
-    console.log(result);
-    if (result.Item) {
-      return success(result.Item);
+    console.log(params);
+    const result = await dynamoDbLib.call("scan", params);
+    if (result.Items) {
+      return success(result.Items);
     } else {
+      console.log(result);
       return failure({ status: false, error: "Item not found." });
     }
   } catch (e) {
+    console.log(e);
     return failure({ status: false });
   }
 }
