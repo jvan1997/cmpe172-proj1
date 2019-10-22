@@ -2,11 +2,11 @@ import * as dynamoDbLib from "./libs/dynamodb-lib";
 import { success, failure } from "./libs/response-lib";
 
 export async function main(event, context) {
-    console.log(event);
+  const data = JSON.parse(event.body);
   const params = {
     TableName: process.env.tableName,
     Key: {
-        userId:event.body.userId,
+        userId:data.userId,
         nodeId: event.pathParameters.id
     }
   };
