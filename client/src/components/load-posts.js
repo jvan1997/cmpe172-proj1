@@ -39,8 +39,18 @@ export default class LoadPost extends Component{
     async onLoad() {
         try{
         await Auth.currentSession();
+        let user = await Auth.currentAuthenticatedUser();
         this.hasAuthenticated();
-        let returns = await this.getPosts();
+        let returns;
+        if(user.attributes.profile === "admin"){
+            console.log("HERE");
+            returns = await this.getAdminPosts();
+        }
+        else{
+            console.log("THERE");
+
+            returns = await this.getPosts();
+        }
         this.setState({posts:returns,isLoading:false});
         console.log(returns);
         }
@@ -50,7 +60,12 @@ export default class LoadPost extends Component{
     
   }
   getPosts(){
-      return  API.get("posts", "/posts");
+        console.log(this.props);
+        return  API.get("posts", "/posts");
+  }
+  getAdminPosts(){
+        return  API.get("posts", "/adminposts");
+
   }
     render() {
         console.log(this.state.isLoading);

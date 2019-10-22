@@ -1,5 +1,5 @@
 import React,{Component} from 'react';
-import {API,Storage} from 'aws-amplify';
+import {API,Storage,Auth} from 'aws-amplify';
 import ReactLoading from 'react-loading';
 import cloneDeep from 'lodash/cloneDeep';
 export default class ViewPost extends Component{
@@ -10,7 +10,8 @@ export default class ViewPost extends Component{
             content:'',
             loaded:false,
             edit:false,
-            deleting:false
+            deleting:false,
+            userInfo: {},
 
         }
         this.changePost = this.changePost.bind(this);
@@ -27,10 +28,8 @@ export default class ViewPost extends Component{
         event.target.value = null;
         return false;
         }
-        console.log(event.target.files[0]);
         let holder = this.state.editPost;
         holder.files = event.target.files[0];
-        console.log(holder);
         this.setState({editPost:holder});
 }
     componentDidMount(){
@@ -43,20 +42,25 @@ export default class ViewPost extends Component{
     }
     async loadNote() {
         let postId = this.props.match.params.id;
-        console.log(postId);
-        return API.get("posts", `/posts/${postId}`);
+        let user = await Auth.currentAuthenticatedUser();
+        this.setState({userInfo:user.attributes});
+        if(user.attributes.profile === "admin"){
+            return API.get("posts", `/adminposts/${postId}`);
+        }
+        else{
+            return API.get("posts", `/posts/${postId}`);
+        }
+        
     }
     async onLoad(){
         try{
         let post = await this.loadNote();
-        console.log(post);
+        post = post.length === 1 ? post[0] : post;
         if(post.attachment){
-            console.log(post.attachment);
             post.attachmentURL = await Storage.vault.get(post.attachment);
         }
         let post2 = cloneDeep(post);
         this.setState({post:post, loaded:true,editPost:post2});
-        console.log(this.state);
     }
     catch(e){
         this.setState({failed:true});
@@ -68,7 +72,6 @@ export default class ViewPost extends Component{
         let current = this.state.editPost;
         current.title = "holder";
         this.setState({edit:true,editPost:current});
-                        console.log(this.state);
 
 
     }
@@ -78,7 +81,6 @@ export default class ViewPost extends Component{
   const stored = await Storage.vault.put(filename, file, {
     contentType: file.type
   });
-console.log(stored.key);
   return stored.key;
 }
 async startDelete(e){
@@ -92,7 +94,16 @@ async startDelete(e){
   try {
     this.setState({deleting:true});
     let postId = this.props.match.params.id;
-    await API.del("posts", `/posts/${postId}`);
+    let post = {userId:this.state.post.userId};
+    if(this.state.userInfo.profile === "admin"){
+        await API.del("posts", `/adminposts/${postId}`, {
+            body:post
+        });
+    }
+    else{
+        await API.del("posts", `/posts/${postId}`);
+    }
+
     this.props.history.push("/");
   } catch (e) {
     alert(e);
@@ -114,7 +125,6 @@ async startDelete(e){
         if(newChange === true || (this.state.editPost.files !== null && this.state.editPost.files !== undefined)){
             const fileKey = this.state.editPost.files ? await this.s3Upload(this.state.editPost.files)
             : this.state.post.attachment;
-            console.log(fileKey);
             this.setState({isUpdating:true});
             const post  ={
                 firstname:this.state.editPost.firstname,
@@ -132,7 +142,6 @@ async startDelete(e){
             this.props.history.push('/');
         }catch(e){
             this.setState({isUpdating:false});
-            console.log(e);
         }
     }
     }
@@ -152,12 +161,14 @@ async startDelete(e){
                 <p>Name: {this.state.post.firstname + " " + this.state.post.lastname}</p>     
                 <p>Content: {this.state.post.content}</p>     
                 <p>Created: {new Date(this.state.post.createdAt).toLocaleString()}</p>
-                <p>Updated: {new Date(this.state.post.updatedAt).toLocaleString()}</p>
+               <p>Updated: {new Date(this.state.post.updatedAt).toLocaleString()}</p>
                 <div className="flex"> 
                 <p>Click to download file:</p>
                 <p onClick={() => window.location = this.state.post.attachmentURL}className="cursor-pointer text-blue-600 hover:text-blue-300">{this.state.post.attachment}</p>
                 </div>
-                <button className="h-10 p-2 w-16 rounded text-white bg-green-600 ml-2 mr-2" onClick={() => this.changePost()}>Edit</button>
+                 {this.state.userInfo.profile !== "admin" && 
+                 <button className="h-10 p-2 w-16 rounded text-white bg-green-600 ml-2 mr-2" onClick={() => this.changePost()}>Edit</button>
+                 }
                 <button className="h-10 p-2 rounded text-white bg-red-500 ml-2 " onClick={(e) => this.startDelete(e)}>Delete</button>
                 {this.state.deleting &&                
                  <div className="text-center items-center justify-center flex">
