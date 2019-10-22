@@ -73,7 +73,7 @@ functions:
     handler: adminGet.main
     events:
       - http:
-          path: posts/{id}
+          path: adminposts/{id}
           method: get
           cors: true
           authorizer: aws_iam
@@ -96,7 +96,7 @@ functions:
     handler: adminList.main
     events:
       - http:
-          path: posts
+          path: adminposts
           method: get
           cors: true
           authorizer: aws_iam
@@ -129,7 +129,7 @@ functions:
     handler: adminDelete.main
     events:
       - http:
-          path: posts/{id}
+          path: adminposts/{id}
           method: delete
           cors: true
           authorizer: aws_iam
